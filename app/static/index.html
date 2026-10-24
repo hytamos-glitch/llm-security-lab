@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finora</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/static/styles.css?v=3">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mk">◆</span> Finora</div>
+    <nav class="nav" id="nav">
+      <button class="on" data-view="overview">Overview</button>
+      <button data-view="activity">Activity</button>
+      <button data-view="manage">Manage</button>
+      <button data-view="cards">Cards</button>
+      <button data-view="reports">Reports</button>
+    </nav>
+    <div class="spacer"></div>
+    <label class="search"><span>⌕</span><input id="search" placeholder="Rechercher…" autocomplete="off"></label>
+    <button class="icon-btn" id="theme" title="Changer de thème">☾</button>
+    <button class="icon-btn bell" title="Notifications">◕<i></i></button>
+    <div class="me"><div class="avatar" id="me-av"></div><div class="me-t"><b id="me-name">—</b><span>Premium</span></div></div>
+  </header>
+
+  <div class="layout">
+    <aside class="rail">
+      <i class="act" data-view="overview" title="Overview"></i>
+      <i data-view="activity" title="Activity"></i>
+      <i data-view="manage" title="Manage"></i>
+      <i data-view="cards" title="Cards"></i>
+      <i data-view="reports" title="Reports"></i>
+      <span class="rail-sp"></span>
+      <i class="muted" title="Réglages"></i>
+    </aside>
+
+    <main class="main">
+      <!-- OVERVIEW -->
+      <section class="view" data-view="overview">
+        <div class="view-head"><div><h1 class="h1">Overview</h1><p class="sub" id="greet">Bon retour.</p></div></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="grid-2-1">
+          <div class="card chart-card">
+            <div class="card-h">
+              <div><span class="lbl">Évolution du solde</span><div class="big" id="ov-balance">—</div></div>
+              <div class="seg" id="ov-period"><button class="on">6M</button><button>1A</button><button>Tout</button></div>
+            </div>
+            <div class="chart" id="ov-chart"></div>
+          </div>
+          <div class="card">
+            <span class="lbl">Dépenses du mois</span>
+            <div class="donut-wrap"><div id="ov-donut"></div><div class="donut-c"><b id="ov-spend">—</b><span>dépensé</span></div></div>
+            <div class="legend" id="ov-legend"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="lbl">Activité récente</span><button class="link" data-goto="activity">Tout voir →</button></div>
+          <div class="tx-list" id="ov-tx"></div>
+        </div>
+      </section>
+
+      <!-- ACTIVITY -->
+      <section class="view" data-view="activity" hidden>
+        <div class="view-head"><div><h1 class="h1">Activity</h1><p class="sub">Tes mouvements récents, au même endroit.</p></div></div>
+        <div class="grid-2-1">
+          <div class="card">
+            <div class="card-h"><span class="lbl">Transactions</span><span class="muted-s" id="act-count"></span></div>
+            <div class="tx-list big-list" id="act-tx"></div>
+          </div>
+          <div>
+            <div class="card qt-card">
+              <span class="lbl">Virement rapide</span>
+              <div class="qt" id="qt"></div>
+            </div>
+            <div class="card" style="margin-top:16px">
+              <span class="lbl">Par catégorie</span>
+              <div class="catbars" id="act-cats"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MANAGE -->
+      <section class="view" data-view="manage" hidden>
+        <div class="view-head">
+          <div><h1 class="h1">Contacts</h1><p class="sub">Les personnes et entreprises que tu paies le plus.</p></div>
+          <button class="btn-primary">+ Ajouter un contact</button>
+        </div>
+        <div class="tabs" id="ct-tabs">
+          <button class="on" data-tab="all">Tous</button>
+          <button data-tab="Person">Personnes</button>
+          <button data-tab="Business">Entreprises</button>
+        </div>
+        <div class="contacts" id="contacts"></div>
+      </section>
+
+      <!-- CARDS -->
+      <section class="view" data-view="cards" hidden>
+        <div class="view-head"><div><h1 class="h1">Manage cards</h1><p class="sub">Gèle tes cartes et ajuste leurs réglages en un geste.</p></div></div>
+        <div class="grid-1-1">
+          <div class="card">
+            <div class="card-h"><span class="lbl">Tes cartes</span><span class="muted-s">Appuie pour retourner</span></div>
+            <div class="card-visual" id="card-visual"></div>
+            <div class="card-tabs" id="card-tabs"></div>
+            <div class="card-actions">
+              <button class="act-btn" id="btn-freeze">❄ Geler</button>
+              <button class="act-btn" id="btn-flip">👁 Numéro</button>
+              <button class="act-btn">⧉ Copier</button>
+            </div>
+          </div>
+          <div class="card">
+            <span class="lbl">Contrôles de la carte</span>
+            <div class="controls" id="controls"></div>
+            <div class="limit">
+              <div class="limit-h"><span>Plafond mensuel</span><b id="limit-v">2 500 $</b></div>
+              <input type="range" id="limit-range" min="500" max="5000" step="100" value="2500">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="view" data-view="reports" hidden>
+        <div class="view-head"><div><h1 class="h1">Savings &amp; Goals</h1><p class="sub">Mets de l'argent de côté pour ce qui compte — et regarde-le grandir.</p></div>
+          <button class="btn-primary">+ Nouvel objectif</button></div>
+        <div class="grid-1-1">
+          <div class="card chart-card">
+            <div class="card-h"><div><span class="lbl">Total épargné</span><div class="big" id="rep-saved">—</div></div>
+              <span class="pill-g">+12% ce trimestre</span></div>
+            <div class="chart bars-chart" id="rep-chart"></div>
+          </div>
+          <div class="card">
+            <span class="lbl">Auto-épargne</span>
+            <div class="autosave" id="autosave"></div>
+          </div>
+        </div>
+        <div class="goals" id="goals"></div>
+      </section>
+    </main>
+  </div>
+
+  <button class="fab" id="fab" aria-label="Ouvrir l'assistant">✦</button>
+
+  <section class="panel" id="panel" hidden>
+    <div class="p-head">
+      <div class="ai">✦</div>
+      <div><div class="nm">Finora Assistant</div><div class="st">en ligne</div></div>
+      <button class="icon-btn close" id="close">✕</button>
+    </div>
+    <div class="p-body" id="messages">
+      <div class="bub a">Bonjour 👋 Je peux consulter tes comptes, analyser tes dépenses, geler une carte,
+        faire un virement ou lire une facture en ligne. Que puis-je faire ?</div>
+      <div class="chips">
+        <button class="chip">Quel est mon solde ?</button>
+        <button class="chip">Mes dépenses d'abonnement</button>
+        <button class="chip">Gèle ma carte Mastercard</button>
+      </div>
+    </div>
+    <form class="p-input" id="form">
+      <input id="input" placeholder="Pose ta question…" autocomplete="off">
+      <button class="snd" type="submit">↑</button>
+    </form>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="/static/app.js?v=3"></script>
+</body>
+</html>

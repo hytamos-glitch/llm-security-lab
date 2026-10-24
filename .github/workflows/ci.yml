@@ -1,0 +1,40 @@
+name: ci-security
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run pytest
+        run: pytest -q
+
+  secrets-scan:
+    name: Scan de secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # SEMAINE 4 : scan des images Docker avec Trivy
+  # image-scan:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: docker build -t finora-app .
+  #     - uses: aquasecurity/trivy-action@master
+  #       with:
+  #         image-ref: finora-app

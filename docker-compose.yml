@@ -1,0 +1,57 @@
+# Orchestration du lab.
+#
+# Réseaux séparés dès la Semaine 1 (durcis en Semaine 3) :
+#   - edge : expose l'app au navigateur
+#   - lab  : l'app peut lire les sites ; les sites ne voient pas l'app
+#
+# Le modèle Ollama tourne sur la MACHINE HÔTE (pas dans un conteneur) :
+# l'app le joint via host.docker.internal.
+
+services:
+  app:
+    build: .
+    container_name: finora-app
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - CHROMA_DIR=/app/app/data/chroma
+      - LEGIT_SITE_URL=http://legit-site:8081
+      - TRAP_SITE_URL=http://trap-site:8082
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks: [edge, lab]
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - chroma-data:/app/app/data/chroma
+    security_opt:
+      - no-new-privileges:true
+
+  legit-site:
+    build: .
+    container_name: finora-legit
+    command: ["python", "lab_sites/legit_site/app.py"]
+    networks: [lab]
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+  trap-site:
+    build: .
+    container_name: finora-trap
+    command: ["python", "lab_sites/trap_site/app.py"]
+    networks: [lab]
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  edge:
+  lab:
+    # SEMAINE 3 : passer en internal:true pour couper tout accès sortant du lab.
+
+volumes:
+  chroma-data:
