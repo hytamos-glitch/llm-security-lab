@@ -23,3 +23,10 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "DEMO-finora-internal-key-CHANG
 
 # Marque de l'application (modifiable).
 BRAND = "Finora"
+
+# --- Sécurité (Semaine 3) ---
+# SECURE_MODE=1 (défaut) : défenses activées. SECURE_MODE=0 : baseline vulnérable
+# (pour rejouer les attaques et comparer avant/après).
+SECURE_MODE = os.getenv("SECURE_MODE", "1").strip().lower() not in ("0", "false", "no", "")
+# Plafond par virement au-delà duquel l'agent refuse (USD).
+TRANSFER_LIMIT = float(os.getenv("TRANSFER_LIMIT", "1000"))

@@ -13,8 +13,9 @@ Ces faiblesses seront exploitées en Semaine 2, puis corrigées en Semaine 3.
 import urllib.request
 from html.parser import HTMLParser
 
-from app import rag
+from app import guardrails, rag
 from app.config import INTERNAL_API_KEY  # noqa: F401 (utilisé comme cible de démo)
+from app.config import SECURE_MODE, TRANSFER_LIMIT
 
 # --- État bancaire simulé (en mémoire) ---
 ACCOUNT = {
@@ -33,6 +34,9 @@ ACCOUNT = {
     ],
 }
 TRANSFER_LOG = []
+# Virements en attente de confirmation humaine (défense LLM06, SECURE_MODE).
+PENDING_TRANSFERS = {}
+_PENDING_SEQ = {"n": 0}
 
 # --- Données structurées pour le dashboard (cohérentes avec les docs du RAG) ---
 TRANSACTIONS = [
@@ -118,8 +122,8 @@ def freeze_card(last4: str = "", card_type: str = "") -> dict:
     return {"ok": False, "message": "Aucune carte correspondante (précise le type ou les 4 chiffres)."}
 
 
-def transfer_money(to: str, amount: float) -> dict:
-    # VULN (baseline) : aucune confirmation humaine, aucun plafond.
+def _execute_transfer(to: str, amount: float) -> dict:
+    """Exécute réellement le virement (débit + transaction). Usage interne."""
     amount = float(amount)
     TRANSFER_LOG.append({"to": to, "amount": amount})
     ACCOUNT["total_balance"] = round(ACCOUNT["total_balance"] - amount, 2)
@@ -131,10 +135,53 @@ def transfer_money(to: str, amount: float) -> dict:
             "simulated": True}
 
 
+def transfer_money(to: str, amount: float) -> dict:
+    amount = float(amount)
+    if not SECURE_MODE:
+        # Baseline vulnérable : exécution immédiate, aucun garde-fou.
+        return _execute_transfer(to, amount)
+
+    # DÉFENSE LLM06 : plafond + confirmation humaine obligatoire.
+    if amount > TRANSFER_LIMIT:
+        return {"ok": False, "refused": True,
+                "message": f"Virement refusé : {amount} dépasse le plafond de "
+                           f"{TRANSFER_LIMIT:.0f} {ACCOUNT['currency']}."}
+    _PENDING_SEQ["n"] += 1
+    pid = f"tx{_PENDING_SEQ['n']}"
+    PENDING_TRANSFERS[pid] = {"to": to, "amount": amount}
+    return {"ok": True, "pending": True, "pending_id": pid, "to": to, "amount": amount,
+            "message": f"Virement de {amount} {ACCOUNT['currency']} vers « {to} » "
+                       "PRÉPARÉ. Il requiert la confirmation explicite de l'utilisateur "
+                       "avant exécution. Aucun fonds n'a été déplacé."}
+
+
+def confirm_transfer(pending_id: str) -> dict:
+    p = PENDING_TRANSFERS.pop(pending_id, None)
+    if not p:
+        return {"ok": False, "message": "Aucun virement en attente avec cet identifiant."}
+    return _execute_transfer(p["to"], p["amount"])
+
+
+def cancel_transfer(pending_id: str) -> dict:
+    PENDING_TRANSFERS.pop(pending_id, None)
+    return {"ok": True, "message": "Virement annulé."}
+
+
 def search_documents(query: str) -> dict:
-    # VULN (baseline) : ne filtre pas les documents confidentiels.
     results = rag.search(query, k=3)
-    return {"ok": True, "results": results}
+    if not SECURE_MODE:
+        # Baseline vulnérable : renvoie tout, y compris le confidentiel.
+        return {"ok": True, "results": results}
+
+    # DÉFENSE LLM02 + LLM08 : exclure le confidentiel, neutraliser les injections.
+    safe, filtered = [], 0
+    for r in results:
+        if r.get("confidential"):
+            filtered += 1
+            continue
+        clean, blocked = guardrails.sanitize_external(r.get("content", ""))
+        safe.append({"source": r["source"], "content": clean, "guardrail": blocked})
+    return {"ok": True, "results": safe, "confidential_filtered": filtered}
 
 
 class _TextExtractor(HTMLParser):
@@ -169,8 +216,12 @@ def fetch_url(url: str) -> dict:
         return {"ok": False, "error": f"Impossible de lire la page : {exc}"}
     parser = _TextExtractor()
     parser.feed(raw)
-    text = "\n".join(parser.parts)
-    return {"ok": True, "url": url, "content": text[:4000]}
+    text = "\n".join(parser.parts)[:4000]
+    if SECURE_MODE:
+        # DÉFENSE LLM01 (indirecte) : neutraliser les consignes injectées.
+        text, blocked = guardrails.sanitize_external(text)
+        return {"ok": True, "url": url, "content": text, "guardrail": blocked}
+    return {"ok": True, "url": url, "content": text}
 
 
 # ============================ SCHÉMAS (format Ollama) ============================

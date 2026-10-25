@@ -73,10 +73,22 @@ pytest -q
 
 | Semaine | Thème | État |
 |--------|-------|------|
-| **1** | Construire la cible (app + RAG + agent + sites + Docker) | ✅ baseline |
-| **2** | Attaquer (OWASP LLM01/02/05/06/08) | à venir |
-| **3** | Défendre (garde-fous, réseau, secrets, moindre privilège) | à venir |
-| **4** | Mesurer, CI sécurité, déploiement cloud, rapport | à venir |
+| **1** | Construire la cible (app + RAG + agent + sites + Docker) | ✅ Fait |
+| **2** | Attaquer (OWASP LLM01/02/05/06/08) — voir `findings/` | ✅ Fait |
+| **3** | Défendre (garde-fous, filtrage, confirmation) — `SECURE_MODE` | ✅ Fait |
+| **4** | Mesurer & rapport — voir `reports/RAPPORT-PENTEST.md` | ✅ Fait |
+
+### Résultats (avant / après durcissement)
+
+| Réf. OWASP | Vulnérabilité | Avant | Après |
+|---|---|---|---|
+| LLM01-A/B | Prompt injection (directe + indirecte) | ❌ Vulnérable | ✅ Corrigé |
+| LLM02 | Fuite de données (RAG confidentiel) | ❌ Vulnérable | ✅ Corrigé |
+| LLM06 | Excessive agency (virement) | ❌ Vulnérable | ✅ Corrigé |
+| LLM08 | Empoisonnement du RAG | ❌ Vulnérable | ✅ Corrigé |
+| LLM05 | Sortie (XSS) | ✅ Non exploitable | ✅ Confirmé sûr |
+
+> Comparer soi-même : `SECURE_MODE=0` rejoue la baseline vulnérable, `SECURE_MODE=1` (défaut) active les défenses.
 
 ## Faiblesses volontaires de la baseline (cibles de la Semaine 2)
 

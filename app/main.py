@@ -64,6 +64,10 @@ class TransferIn(BaseModel):
     amount: float
 
 
+class ConfirmIn(BaseModel):
+    pending_id: str
+
+
 # ---------- état du dashboard ----------
 @app.get("/api/state")
 def state():
@@ -103,7 +107,21 @@ def card_control(p: ControlIn):
 
 @app.post("/api/transfer")
 def transfer(p: TransferIn):
-    return tools.transfer_money(p.to, p.amount)
+    # Virement initié par l'utilisateur dans l'UI (action humaine explicite) :
+    # exécution directe, mais plafond respecté.
+    if p.amount > tools.TRANSFER_LIMIT:
+        return {"ok": False, "message": f"Montant au-dessus du plafond ({tools.TRANSFER_LIMIT:.0f})."}
+    return tools._execute_transfer(p.to, p.amount)
+
+
+@app.post("/api/transfer/confirm")
+def transfer_confirm(p: ConfirmIn):
+    return tools.confirm_transfer(p.pending_id)
+
+
+@app.post("/api/transfer/cancel")
+def transfer_cancel(p: ConfirmIn):
+    return tools.cancel_transfer(p.pending_id)
 
 
 @app.post("/api/chat")

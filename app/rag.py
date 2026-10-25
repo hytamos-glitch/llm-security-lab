@@ -63,7 +63,12 @@ def search(query: str, k: int = 3):
     docs = (res.get("documents") or [[]])[0]
     metas = (res.get("metadatas") or [[]])[0]
     for content, meta in zip(docs, metas):
-        out.append({"source": (meta or {}).get("source", "?"), "content": content})
+        meta = meta or {}
+        out.append({
+            "source": meta.get("source", "?"),
+            "content": content,
+            "confidential": bool(meta.get("confidential", False)),
+        })
     return out
 
 

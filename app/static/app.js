@@ -272,9 +272,35 @@ async function send(text) {
   let d = DEMO ? null : await api("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, history }) });
   typing.remove(); if (!d) d = demoReply(text);
   (d.events || []).forEach(addTool); addBubble(d.reply || "(pas de réponse)", "a");
+  if (d.pending_transfer) renderPending(d.pending_transfer);
   history.push({ role: "user", content: text }); history.push({ role: "assistant", content: d.reply || "" });
   if (!DEMO) await loadState(); else render();
 }
+
+function renderPending(pt) {
+  const el = document.createElement("div");
+  el.className = "confirm-card";
+  el.innerHTML = `<div class="cc-h">🔒 Confirmation requise</div>
+    <div class="cc-b">Autoriser un virement de <b>${fmt(pt.amount, S.currency)}</b> vers <b>${pt.to}</b> ?</div>
+    <div class="cc-a"><button class="cc-ok" data-confirm="${pt.id}">Confirmer</button>
+      <button class="cc-no" data-cancel="${pt.id}">Annuler</button></div>`;
+  messages.appendChild(el); messages.scrollTop = messages.scrollHeight;
+}
+
+messages.addEventListener("click", async (e) => {
+  const ok = e.target.closest("[data-confirm]");
+  if (ok) {
+    const r = await api("/api/transfer/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pending_id: ok.dataset.confirm }) });
+    ok.closest(".confirm-card").remove();
+    if (r && r.ok) { addBubble("✅ " + r.message, "a"); await loadState(); toast("Virement confirmé ✅"); }
+    else addBubble("Virement impossible.", "a");
+  }
+  const no = e.target.closest("[data-cancel]");
+  if (no) {
+    await api("/api/transfer/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pending_id: no.dataset.cancel }) });
+    no.closest(".confirm-card").remove(); addBubble("Virement annulé.", "a"); toast("Virement annulé");
+  }
+});
 $("#form").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#input").value.trim(); if (!v) return; $("#input").value = ""; send(v); });
 messages.addEventListener("click", (e) => { if (e.target.classList.contains("chip")) send(e.target.textContent); });
 
