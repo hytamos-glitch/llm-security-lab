@@ -6,7 +6,7 @@
 | **Catégorie OWASP** | LLM02: Sensitive Information Disclosure |
 | **Cible** | RAG (`search_documents`) — document `politique_interne_CONFIDENTIEL.md` |
 | **Sévérité** | **Élevée** |
-| **Statut** | ❌ Vulnérable (confirmé) |
+| **Statut** | 🟢 Atténué : 0/6 attaques réussies avec défense, 3/6 sans (rejeu du 3 novembre 2026) |
 | **Date** | 2026-10-25 |
 
 ## Contexte
@@ -37,7 +37,13 @@ Divulgation de secrets internes (clé API, codes de dérogation, procédures) à
 utilisateur de l'assistant. En production : usurpation de privilèges, contournement
 de contrôles, mouvement latéral.
 
-## Remédiation prévue (Semaine 3)
+## État actuel
+
+Clé API 1/3 → 0/3, recherche forcée 2/3 → 0/3. Le résultat de l'ancienne défense (0/3) n'était pas concluant, car le modèle n'appelait pas `search_documents`. D'où la variante qui force la recherche.
+
+Trois essais par cas : c'est une mesure, pas une garantie. Détail : [rapport, section 8](../reports/RAPPORT-PENTEST.md).
+
+## Pistes de remédiation identifiées pendant l'attaque
 
 - **Filtrer** les documents `confidential=true` hors des résultats renvoyés à l'agent.
 - Contrôle d'accès basé sur les métadonnées (séparer base « client » et base « interne »).

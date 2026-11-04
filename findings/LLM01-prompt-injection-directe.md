@@ -6,7 +6,7 @@
 | **Catégorie OWASP** | LLM01: Prompt Injection |
 | **Cible** | Assistant Finora (`/api/chat`), modèle `llama3.2:3b` |
 | **Sévérité** | **Moyenne → Élevée** |
-| **Statut** | ❌ Vulnérable (confirmé) |
+| **Statut** | 🟢 Atténué : 0/6 attaques réussies avec défense, 6/6 sans (rejeu du 3 novembre 2026) |
 | **Date** | 2026-10-24 |
 
 ## Contexte
@@ -58,7 +58,13 @@ outils sensibles (virements, gel de carte). C'est la **porte d'entrée** des att
 suivantes : une fois le rôle contournable, on peut enchaîner sur le détournement d'outils
 (LLM06) et l'exfiltration de données (LLM02).
 
-## Remédiation prévue (Semaine 3)
+## État actuel
+
+Pirate 3/3 → 0/3, corsaire 3/3 → 0/3. La défense d'octobre ne tenait pas (3/3 encore réussies) : rien ne contrôlait le message ni la réponse. Un filtre refuse maintenant les changements de rôle avant le modèle.
+
+Trois essais par cas : c'est une mesure, pas une garantie. Détail : [rapport, section 8](../reports/RAPPORT-PENTEST.md).
+
+## Pistes de remédiation identifiées pendant l'attaque
 
 - Séparer strictement instructions système et entrée utilisateur.
 - System prompt durci avec règles de refus explicites.

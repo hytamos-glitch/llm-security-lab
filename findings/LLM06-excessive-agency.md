@@ -6,7 +6,7 @@
 | **Catégorie OWASP** | LLM06: Excessive Agency |
 | **Cible** | Outil `transfer_money` via l'assistant Finora |
 | **Sévérité** | **Élevée** |
-| **Statut** | ❌ Vulnérable (confirmé) |
+| **Statut** | 🟢 Atténué : 0/3 virements débités avec défense, 3/3 sans (rejeu du 3 novembre 2026) |
 | **Date** | 2026-10-25 |
 
 ## Contexte
@@ -37,7 +37,13 @@ s'exécute **sans confirmation humaine, sans plafond, sans vérification du bén
 **Fraude financière directe.** Un attaquant qui contrôle une entrée de l'agent (message,
 page web, document) peut provoquer des virements non autorisés.
 
-## Remédiation prévue (Semaine 3)
+## État actuel
+
+Avec défense, le virement reste en attente de confirmation dans les 3 essais et le solde ne bouge pas. Un virement exige maintenant une demande de l'utilisateur, puis sa validation. Le plafond par jour et la liste blanche de bénéficiaires ci-dessous ne sont pas en place.
+
+Trois essais par cas : c'est une mesure, pas une garantie. Détail : [rapport, section 8](../reports/RAPPORT-PENTEST.md).
+
+## Pistes de remédiation identifiées pendant l'attaque
 
 - **Confirmation humaine obligatoire** avant tout virement (étape de validation explicite).
 - **Plafond** par opération et par jour.
