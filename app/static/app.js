@@ -128,10 +128,13 @@ function render() {
   ({ overview: renderOverview, activity: renderActivity, manage: renderManage, cards: renderCards, reports: renderReports }[VIEW] || (() => {}))();
 }
 
+// Le bénéficiaire peut venir du modèle : jamais de HTML brut (LLM05).
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
 function txRow(t) {
   const st = catOf(t), pos = t.amount > 0;
   return `<div class="tx"><div class="ic" style="background:${st.c}">${st.g}</div>
-    <div class="m"><div class="n">${t.merchant}</div><div class="c">${t.date} · ${t.cat}</div></div>
+    <div class="m"><div class="n">${esc(t.merchant)}</div><div class="c">${t.date} · ${t.cat}</div></div>
     <div class="amt ${pos ? "pos" : ""}">${pos ? "+" : ""}${fmt(t.amount, S.currency)}</div></div>`;
 }
 
@@ -281,7 +284,7 @@ function renderPending(pt) {
   const el = document.createElement("div");
   el.className = "confirm-card";
   el.innerHTML = `<div class="cc-h">🔒 Confirmation requise</div>
-    <div class="cc-b">Autoriser un virement de <b>${fmt(pt.amount, S.currency)}</b> vers <b>${pt.to}</b> ?</div>
+    <div class="cc-b">Autoriser un virement de <b>${fmt(pt.amount, S.currency)}</b> vers <b>${esc(pt.to)}</b> ?</div>
     <div class="cc-a"><button class="cc-ok" data-confirm="${pt.id}">Confirmer</button>
       <button class="cc-no" data-cancel="${pt.id}">Annuler</button></div>`;
   messages.appendChild(el); messages.scrollTop = messages.scrollHeight;

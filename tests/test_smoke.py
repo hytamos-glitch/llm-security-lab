@@ -1,6 +1,6 @@
 """Tests de fumée — vérifient le socle sans dépendre d'Ollama.
 
-(Les tests d'attaque/défense arriveront en Semaine 2/3.)
+Les attaques contre le vrai modèle sont dans redteam/replay.py.
 """
 from app import guardrails, tools
 

@@ -17,3 +17,9 @@ app/data/chroma/
 # OS
 .DS_Store
 Thumbs.db
+
+# Rendus de la simulation
+teardown-out/
+
+# Essais intermediaires du rejeu (les traces de reference sont nommees)
+reports/traces/run-*.json

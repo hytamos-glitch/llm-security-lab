@@ -233,6 +233,7 @@ input{font-family:inherit}
 .fab:hover{transform:scale(1.06)}
 .panel{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:94vw;background:var(--surface);
   border-left:1px solid var(--line);box-shadow:var(--panel-shadow);display:flex;flex-direction:column;z-index:30;animation:slideIn .25s ease}
+.panel[hidden]{display:none}
 @keyframes slideIn{from{transform:translateX(30px);opacity:.4}to{transform:none;opacity:1}}
 .p-head{display:flex;align-items:center;gap:11px;padding:15px 17px;border-bottom:1px solid var(--line)}
 .p-head .ai{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--brand),#0ea5a3)}

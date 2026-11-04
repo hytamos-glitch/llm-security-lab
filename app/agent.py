@@ -8,8 +8,8 @@ import json
 
 from ollama import Client
 
-from app import tools
-from app.config import OLLAMA_HOST, OLLAMA_MODEL, SECURE_MODE
+from app import guardrails, tools
+from app.config import INTERNAL_API_KEY, OLLAMA_HOST, OLLAMA_MODEL, SECURE_MODE, SUPERVISOR_CODE
 
 MAX_STEPS = 6
 
@@ -51,6 +51,11 @@ def run_agent(user_message: str, history: list | None = None) -> dict:
     """Traite un message utilisateur. Retourne {reply, events, error, pending_transfer}."""
     events: list[dict] = []
     pending_transfer = None
+    read_external = False
+    if SECURE_MODE:
+        refusal = guardrails.screen_user_message(user_message)
+        if refusal:
+            return {"reply": refusal, "events": events, "error": None, "pending_transfer": None}
     prompt = SYSTEM_PROMPT_SECURE if SECURE_MODE else SYSTEM_PROMPT_BASELINE
     messages: list = [{"role": "system", "content": prompt}]
     if history:
@@ -74,7 +79,12 @@ def run_agent(user_message: str, history: list | None = None) -> dict:
         tool_calls = getattr(msg, "tool_calls", None) or []
 
         if not tool_calls:
-            return {"reply": (msg.content or "").strip(), "events": events,
+            reply = (msg.content or "").strip()
+            if SECURE_MODE:
+                reply, _ = guardrails.screen_reply(reply, user_message, read_external,
+                                                   (INTERNAL_API_KEY, SUPERVISOR_CODE),
+                                                   pending=bool(pending_transfer))
+            return {"reply": reply, "events": events,
                     "error": None, "pending_transfer": pending_transfer}
 
         for tc in tool_calls:
@@ -85,7 +95,9 @@ def run_agent(user_message: str, history: list | None = None) -> dict:
                     args = json.loads(args)
                 except Exception:  # noqa: BLE001
                     args = {}
-            result = tools.dispatch(name, args)
+            refusal = guardrails.check_tool_call(name, args, user_message) if SECURE_MODE else None
+            result = refusal or tools.dispatch(name, args)
+            read_external = read_external or (name in _UNTRUSTED and not refusal)
             events.append({"tool": name, "args": args, "ok": bool(result.get("ok", True))})
             if result.get("pending"):
                 pending_transfer = {"id": result["pending_id"], "to": result["to"],

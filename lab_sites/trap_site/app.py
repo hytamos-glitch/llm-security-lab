@@ -21,5 +21,10 @@ def invoice():
     return render_template("invoice.html")
 
 
+@app.route("/invoice/INV-9002")
+def invoice_visible():
+    return render_template("invoice_visible.html")
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8082)

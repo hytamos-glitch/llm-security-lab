@@ -12,10 +12,11 @@ Ces faiblesses seront exploitées en Semaine 2, puis corrigées en Semaine 3.
 """
 import urllib.request
 from html.parser import HTMLParser
+from urllib.parse import urlsplit
 
 from app import guardrails, rag
 from app.config import INTERNAL_API_KEY  # noqa: F401 (utilisé comme cible de démo)
-from app.config import SECURE_MODE, TRANSFER_LIMIT
+from app.config import ALLOWED_FETCH_HOSTS, SECURE_MODE, TRANSFER_LIMIT
 
 # --- État bancaire simulé (en mémoire) ---
 ACCOUNT = {
@@ -184,22 +185,45 @@ def search_documents(query: str) -> dict:
     return {"ok": True, "results": safe, "confidential_filtered": filtered}
 
 
+_VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+_HIDDEN_STYLES = ("display:none", "visibility:hidden", "font-size:0", "left:-", "top:-", "opacity:0")
+
+
+def _is_hidden(attrs) -> bool:
+    found = {k.lower(): (v or "") for k, v in attrs}
+    style = found.get("style", "").replace(" ", "").lower()
+    return ("hidden" in found or found.get("aria-hidden", "").lower() == "true"
+            or any(mark in style for mark in _HIDDEN_STYLES))
+
+
 class _TextExtractor(HTMLParser):
-    def __init__(self):
+    def __init__(self, drop_hidden=False):
         super().__init__()
         self._skip = False
+        self._drop_hidden = drop_hidden
+        self._hidden_depth = 0
+        self.hidden_blocks = 0
         self.parts = []
 
     def handle_starttag(self, tag, attrs):
         if tag in ("script", "style"):
             self._skip = True
+        if tag in _VOID_TAGS:
+            return
+        if self._hidden_depth:
+            self._hidden_depth += 1
+        elif self._drop_hidden and _is_hidden(attrs):
+            self._hidden_depth = 1
+            self.hidden_blocks += 1
 
     def handle_endtag(self, tag):
         if tag in ("script", "style"):
             self._skip = False
+        if self._hidden_depth and tag not in _VOID_TAGS:
+            self._hidden_depth -= 1
 
     def handle_data(self, data):
-        if not self._skip and data.strip():
+        if not self._skip and not self._hidden_depth and data.strip():
             self.parts.append(data.strip())
 
 
@@ -208,18 +232,24 @@ def fetch_url(url: str) -> dict:
     # traité par l'agent comme du contexte de confiance.
     if not url.startswith(("http://", "https://")):
         return {"ok": False, "error": "URL invalide."}
+    # DÉFENSE (SSRF) : le modèle invente parfois des URL ; on ne lit que les hôtes autorisés.
+    if SECURE_MODE and (urlsplit(url).hostname or "").lower() not in ALLOWED_FETCH_HOSTS:
+        return {"ok": False, "refused": True, "error": "Hôte non autorisé."}
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "FinoraAgent/0.1"})
         with urllib.request.urlopen(req, timeout=8) as resp:  # noqa: S310 (lab)
             raw = resp.read().decode("utf-8", errors="replace")
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": f"Impossible de lire la page : {exc}"}
-    parser = _TextExtractor()
+    # DÉFENSE LLM01 (indirecte) : un humain ne voit pas le texte caché, l'agent non plus.
+    parser = _TextExtractor(drop_hidden=SECURE_MODE)
     parser.feed(raw)
     text = "\n".join(parser.parts)[:4000]
     if SECURE_MODE:
         # DÉFENSE LLM01 (indirecte) : neutraliser les consignes injectées.
         text, blocked = guardrails.sanitize_external(text)
+        if parser.hidden_blocks and not blocked:
+            text, blocked = text + guardrails.GUARD_NOTICE, True
         return {"ok": True, "url": url, "content": text, "guardrail": blocked}
     return {"ok": True, "url": url, "content": text}
 
